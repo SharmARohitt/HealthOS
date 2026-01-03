@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import type { User, UserRole } from '@/types';
+import { authenticateMockUser } from '@/services/mockUsers';
 
 interface AuthState {
   user: User | null;
@@ -26,30 +27,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false,
 
   login: async (email: string, password: string, role: UserRole) => {
     try {
-      // In production, this would call the authentication service
-      // For now, mock authentication
-      const mockUser: User = {
-        id: `user_${Date.now()}`,
-        role,
-        email,
-        name: email.split('@')[0],
-        verified: true,
-        createdAt: new Date(),
-        lastLoginAt: new Date(),
-      };
+      // Authenticate with mock users
+      const authenticatedUser = authenticateMockUser(email, password, role);
+      
+      if (!authenticatedUser) {
+        throw new Error('Invalid credentials. Please check email, password, and role.');
+      }
 
       const mockToken = `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Store securely
       await SecureStore.setItemAsync(TOKEN_KEY, mockToken);
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(mockUser));
+      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(authenticatedUser));
 
       set({
-        user: mockUser,
+        user: authenticatedUser,
         token: mockToken,
         isAuthenticated: true,
         isLoading: false,

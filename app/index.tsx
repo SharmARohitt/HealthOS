@@ -4,49 +4,42 @@
 
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { Colors } from '@/constants/theme';
 
 export default function Index() {
-  const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuthStore();
 
-  useEffect(() => {
-    if (isLoading) return;
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={Colors.accent.primary} />
+      </View>
+    );
+  }
 
-    if (!isAuthenticated || !user) {
-      router.replace('/(auth)/login');
-      return;
-    }
+  // Redirect based on authentication state
+  if (!isAuthenticated || !user) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
-    // Route to role-based home screen
-    switch (user.role) {
-      case 'patient':
-        router.replace('/(patient)/timeline');
-        break;
-      case 'doctor':
-        router.replace('/(doctor)/dashboard');
-        break;
-      case 'lab':
-        router.replace('/(lab)/dashboard');
-        break;
-      case 'insurer':
-        router.replace('/(insurer)/dashboard');
-        break;
-      case 'auditor':
-        router.replace('/(auditor)/dashboard');
-        break;
-      default:
-        router.replace('/(auth)/login');
-    }
-  }, [isAuthenticated, isLoading, user, router]);
-
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={Colors.accent.primary} />
-    </View>
-  );
+  // Route to role-based home screen
+  switch (user.role) {
+    case 'patient':
+      return <Redirect href="/(patient)/timeline" />;
+    case 'doctor':
+      return <Redirect href="/(doctor)/dashboard" />;
+    case 'lab':
+      return <Redirect href="/(lab)/dashboard" />;
+    case 'insurer':
+      return <Redirect href="/(insurer)/dashboard" />;
+    case 'auditor':
+      return <Redirect href="/(auditor)/dashboard" />;
+    default:
+      return <Redirect href="/(auth)/login" />;
+  }
 }
 
 const styles = StyleSheet.create({

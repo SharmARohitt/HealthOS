@@ -10,10 +10,13 @@ import { useAuthStore } from '@/store/authStore';
 import { Colors } from '@/constants/theme';
 
 export default function RootLayout() {
-  const { checkAuth, isLoading } = useAuthStore();
+  const { checkAuth, logout } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
+    // Clear authentication on app start to force login
+    logout().then(() => {
+      checkAuth();
+    });
   }, []);
 
   return (

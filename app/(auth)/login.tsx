@@ -13,18 +13,21 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/types/user';
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/theme';
+import { MOCK_USERS } from '@/services/mockUsers';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, logout } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.PATIENT);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   const roles = [
     { value: UserRole.PATIENT, label: 'Patient' },
@@ -36,26 +39,55 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
+      setError('Please enter email and password');
       return;
     }
 
     setIsLoading(true);
+    setError('');
     try {
       await login(email, password, selectedRole);
-      // Navigation handled by app/index.tsx
+      
+      // Navigate based on role
+      switch (selectedRole) {
+        case UserRole.PATIENT:
+          router.replace('/(patient)/timeline');
+          break;
+        case UserRole.DOCTOR:
+          router.replace('/(doctor)/dashboard');
+          break;
+        case UserRole.LAB:
+          router.replace('/(lab)/dashboard');
+          break;
+        case UserRole.INSURER:
+          router.replace('/(insurer)/dashboard');
+          break;
+        case UserRole.AUDITOR:
+          router.replace('/(auditor)/dashboard');
+          break;
+      }
     } catch (error) {
       console.error('Login failed:', error);
-      // In production, show error message
+      setError('Invalid credentials. Please check your email, password, and selected role.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const quickFillCredentials = (role: UserRole) => {
+    const mockUser = MOCK_USERS[role];
+    setEmail(mockUser.email);
+    setPassword(mockUser.password);
+    setSelectedRole(role);
+    setError('');
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -64,6 +96,17 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>HealthOS</Text>
           <Text style={styles.subtitle}>The Medical Truth Layer</Text>
+          <TouchableOpacity 
+            style={styles.clearCacheButton}
+            onPress={async () => {
+              await logout();
+              setError('');
+              setEmail('');
+              setPassword('');
+            }}
+          >
+            <Text style={styles.clearCacheText}>Clear Cache</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Role Selection */}
@@ -94,6 +137,12 @@ export default function LoginScreen() {
 
         {/* Login Form */}
         <View style={styles.form}>
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Email</Text>
             <TextInput
@@ -132,20 +181,56 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Quick Login Helper */}
+        <View style={styles.quickLoginContainer}>
+          <Text style={styles.quickLoginLabel}>Quick Login (Dev Mode)</Text>
+          <View style={styles.quickLoginButtons}>
+            {roles.map((role) => (
+              <TouchableOpacity
+                key={role.value}
+                style={styles.quickLoginButton}
+                onPress={() => quickFillCredentials(role.value)}
+              >
+                <Text style={styles.quickLoginButtonText}>{role.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.quickLoginHint}>
+            Tap to auto-fill credentials for each role
+          </Text>
+        </View>
+
+        {/* Credentials Info */}
+        <View style={styles.credentialsContainer}>
+          <Text style={styles.credentialsTitle}>Test Credentials:</Text>
+          {roles.map((role) => {
+            const mockUser = MOCK_USERS[role.value];
+            return (
+              <Text key={role.value} style={styles.credentialsText}>
+                {role.label}: {mockUser.email} / {mockUser.password}
+              </Text>
+            );
+          })}
+        </View>
+
         {/* Info Text */}
         <Text style={styles.infoText}>
           This is a demonstration interface. Authentication is simplified for
           development purposes.
         </Text>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  container: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -167,6 +252,17 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.text.secondary,
     textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  clearCacheButton: {
+    marginTop: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+  },
+  clearCacheText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    textDecorationLine: 'underline',
   },
   roleContainer: {
     marginBottom: Spacing.xl,
@@ -205,6 +301,17 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: Spacing.xl,
   },
+  errorContainer: {
+    backgroundColor: '#ff4444',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+  },
+  errorText: {
+    color: Colors.text.primary,
+    fontSize: Typography.fontSize.sm,
+    textAlign: 'center',
+  },
   inputContainer: {
     marginBottom: Spacing.md,
   },
@@ -237,6 +344,62 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.primary,
+  },
+  quickLoginContainer: {
+    marginBottom: Spacing.xl,
+    padding: Spacing.md,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  quickLoginLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.accent.primary,
+    marginBottom: Spacing.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  quickLoginButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  quickLoginButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.accent.primary,
+  },
+  quickLoginButtonText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  quickLoginHint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontStyle: 'italic',
+  },
+  credentialsContainer: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: `${Colors.accent.primary}10`,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: `${Colors.accent.primary}30`,
+  },
+  credentialsTitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.xs,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  credentialsText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginBottom: 2,
   },
   infoText: {
     fontSize: Typography.fontSize.xs,

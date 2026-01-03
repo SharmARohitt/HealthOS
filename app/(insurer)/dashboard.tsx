@@ -7,19 +7,35 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useAuthStore } from '@/store/authStore';
 import { Colors, Typography, Spacing } from '@/constants/theme';
 
 export default function InsurerDashboardScreen() {
+  const router = useRouter();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(auth)/login');
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Insurer Dashboard</Text>
-        <Text style={styles.headerSubtitle}>
-          View patient medical records with consent
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>Insurer Dashboard</Text>
+          <Text style={styles.headerSubtitle}>
+            View patient medical records with consent
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>⚙️ Logout</Text>
+        </TouchableOpacity>
       </View>
       <ScrollView style={styles.content}>
         <Text style={styles.placeholderText}>
@@ -39,6 +55,9 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.medium,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: Typography.fontSize['2xl'],
@@ -49,6 +68,18 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.tertiary,
+  },
+  logoutButton: {
+    padding: Spacing.sm,
+    borderRadius: 8,
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  logoutText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.accent.primary,
+    fontWeight: Typography.fontWeight.medium,
   },
   content: {
     flex: 1,
