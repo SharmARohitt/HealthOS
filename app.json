@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "HealthOS",
+    "slug": "healthos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "healthos",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0e13"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.healthos.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0e13"
+      },
+      "package": "com.healthos.app"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
+
